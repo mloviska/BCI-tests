@@ -9,6 +9,8 @@ from pytest_container import GitRepositoryBuild
 from bci_tester.data import RUST_CONTAINERS
 from bci_tester.fips import host_fips_enabled
 
+from bci_tester.data import OS_VERSION
+
 CONTAINER_IMAGES = RUST_CONTAINERS
 
 
@@ -42,7 +44,9 @@ def test_cargo_version(auto_container):
 #   "mac verify failure"
 # Be aware that the skip rule matches partially, thus, a few more tests are
 # skipped, but that is acceptable.
-RUST_OPENSSL_FIPS_SKIP = (
+RUST_OPENSSL_FIPS_SKIP = []
+if host_fips_enabled():
+    RUST_OPENSSL_FIPS_SKIP.append(
     [
         "cipher_ctx::test::full_block_updates_3des",
         "cipher_ctx::test::seal_open",
@@ -82,9 +86,15 @@ RUST_OPENSSL_FIPS_SKIP = (
         "symm::tests::test_rc4",
         "symm::tests::test_sm4",
     ]
-    if host_fips_enabled()
-    else []
 )
+    if OS_VERSION.startswith("16."):
+        RUST_OPENSSL_FIPS_SKIP.extend(
+        [
+            "cipher_ctx::test::test_des3_wrap_cipher_update_buffer_size",
+            "cipher_ctx::test::test_des3_wrap_cipher_update_vec_buffer_size",
+            "cipher_ctx::test::test_des3_wrap_unwrap",
+        ]
+        )
 
 RUST_OPENSSL_FIPS_SKIP_LIST = " ".join(
     f"--skip {test}" for test in RUST_OPENSSL_FIPS_SKIP
