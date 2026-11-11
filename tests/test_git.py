@@ -25,12 +25,14 @@ _PUB_KEY = "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYA
 
 _SSH_PORT = 22022
 
+_UID = 6000
+
 _GIT_SERVER_CONTAINERFILE = (
     rf"""
 RUN zypper -n in patterns-base-fips
 RUN zypper -n in git-core openssh-server openssh-clients
 RUN ssh-keygen -A
-RUN useradd -U -m -p "*" -s /bin/bash -u 6000 git
+RUN useradd -U -m -p "*" -s /bin/bash -u {_UID} git
 
 RUN mkdir /home/git/.ssh && touch /home/git/.ssh/authorized_keys
 RUN chmod 700 /home/git/.ssh && chmod 600 /home/git/.ssh/authorized_keys
@@ -56,13 +58,13 @@ X11Forwarding no\n\
 Subsystem       sftp    /usr/lib/ssh/sftp-server\n\
 ' > /etc/ssh/sshd_config
 
-RUN chown -R git /etc/ssh
+RUN chown -R git:git /etc/ssh
 
 EXPOSE {_SSH_PORT}
 
-USER 6000
+USER {_UID}
 
-CMD ["/usr/sbin/sshd -De -h /etc/ssh/ssh_host_ecdsa_key"]
+CMD ["/usr/sbin/sshd", "-De", "-h", "/etc/ssh/ssh_host_ecdsa_key"]
 
 HEALTHCHECK --interval=5s --timeout=5s --retries=5"""
     + (" --start-period=1m" if LOCALHOST.system_info.arch == "ppc64le" else "")
